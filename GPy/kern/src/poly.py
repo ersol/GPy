@@ -27,6 +27,10 @@ class Poly(Kern):
         _, _, B = self._AB(X, X2)
         return B * self.variance
 
+    def Kdiag(self, X):
+        _, _, B = self._ABdiag(X)
+        return B * self.variance
+
     @Cache_this(limit=3)
     def _AB(self, X, X2=None):
         if X2 is None:
@@ -37,8 +41,15 @@ class Poly(Kern):
         B = A ** self.order
         return dot_prod, A, B
 
-    def Kdiag(self, X):
-        return self.K(X).diagonal()#self.variance*(np.square(X).sum(1) + 1.)**self.order
+    @Cache_this(limit=3)
+    def _ABdiag(self, X):
+        dot_prod = (X**2).squeeze()
+        A = (self.scale * dot_prod) + self.bias
+        B = A ** self.order
+        return dot_prod, A, B
+
+    #def Kdiag(self, X):
+    #    return self.K(X).diagonal()#self.variance*(np.square(X).sum(1) + 1.)**self.order
 
     def update_gradients_full(self, dL_dK, X, X2=None):
         dot_prod, A, B = self._AB(X, X2)
@@ -47,13 +58,26 @@ class Poly(Kern):
         self.scale.gradient = (dL_dA * dot_prod).sum()
         self.bias.gradient = dL_dA.sum()
         self.variance.gradient = np.sum(dL_dK * B)
-        #import ipdb;ipdb.set_trace()
 
     def update_gradients_diag(self, dL_dKdiag, X):
-        raise NotImplementedError
+        dot_prod, A, B = self._ABdiag(X)
+        dK_dA = self.variance * self.order * A ** (self.order-1.)
+        dL_dA = dL_dKdiag * (dK_dA)
+        self.scale.gradient = (dL_dA * dot_prod).sum()
+        self.bias.gradient = dL_dA.sum()
+        self.variance.gradient = np.sum(dL_dKdiag * B)
 
     def gradients_X(self, dL_dK, X, X2=None):
-        raise NotImplementedError
+        dot_prod, A, B = self._AB(X, X2)
+        dK_dA = self.variance * self.order * A ** (self.order-1.)
+        dL_dA = dL_dK * (dK_dA)
+        dist2 = (dL_dA * dot_prod) + dL_dA + dL_dK * B
+        dL_dX = np.sum(dist2, 1)[:, None]
+        return dL_dX
 
     def gradients_X_diag(self, dL_dKdiag, X):
-        raise NotImplementedError
+        dot_prod, A, B = self._ABdiag(X)
+        dK_dA = self.variance * self.order * A ** (self.order-1.)
+        dL_dA = dL_dKdiag * (dK_dA)
+        dL_dX = (dL_dA * dot_prod) + dL_dA + (dL_dKdiag * B)
+        return dL_dX.reshape(-1,1)
