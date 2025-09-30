@@ -2,6 +2,7 @@ import GPy
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 alpha = 1e-5
 nsamples = 5000#40
@@ -33,15 +34,23 @@ m.optimize()
 m.plot()
 plt.show()
 
-print("K(X,X):")
-print(k.K(np.array([0,4,1.3,2,5,6,3,2]).reshape(-1,1)).diagonal())
-print("Kdiag(X):")
-print(k.Kdiag(np.array([0,4,1.3,2,5,6,3,2]).reshape(-1,1)))
-print("dL_dK * dK_dX:")
-print(k.gradients_X(np.identity(4), np.array([1,2,3,4]).reshape(-1,1), X2=np.array([3,5,7,9]).reshape(-1,1)))
-print("dL_dKdiag * dKdiag_dX:")
-print(k.gradients_X_diag(np.array([1,1,1,1]).reshape(1,-1), np.array([1,2,3,4]).reshape(-1,1)))
+dL_dK = np.identity(4)
+dL_dK_pert = deepcopy(dL_dK)
+dL_dK_pert[2,3] = 1
+dL_dKdiag = np.array([1,1,1,1])
+X_test = np.array([1,2,3,4]).reshape(-1,1)
+X2_test = np.array([3,5,7,9]).reshape(-1,1)
 
+print("K(X,X):")
+print(k.K(X_test).diagonal())
+print("Kdiag(X):")
+print(k.Kdiag(X_test))
+print("dL_dK * dK_dX:")
+print(k.gradients_X(dL_dK, X_test, X2=X2_test))
+print("dL_dK_pert * dK_dX:")
+print(k.gradients_X(dL_dK_pert, X_test, X2=X2_test))
+print("dL_dKdiag * dKdiag_dX:")
+print(k.gradients_X_diag(dL_dKdiag, X_test))
 
 num_inducing = 100
 SPm = GPy.models.sparse_gp_regression.SparseGPRegression(X,Y,kernel=k,num_inducing=num_inducing)

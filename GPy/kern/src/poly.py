@@ -48,9 +48,6 @@ class Poly(Kern):
         B = A ** self.order
         return dot_prod, A, B
 
-    #def Kdiag(self, X):
-    #    return self.K(X).diagonal()#self.variance*(np.square(X).sum(1) + 1.)**self.order
-
     def update_gradients_full(self, dL_dK, X, X2=None):
         dot_prod, A, B = self._AB(X, X2)
         dK_dA = self.variance * self.order * A ** (self.order-1.)
@@ -78,6 +75,6 @@ class Poly(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         dot_prod, A, B = self._ABdiag(X)
         dK_dA = self.variance * self.order * A ** (self.order-1.)
-        dL_dA = dL_dKdiag * (dK_dA)
-        dL_dX = (dL_dA * dot_prod) + dL_dA + (dL_dKdiag * B)
-        return dL_dX.reshape(-1,1)
+        dL_dA = dL_dKdiag[:,None] * (dK_dA)
+        dL_dX = (dL_dA * dot_prod) + dL_dA + (dL_dKdiag[:,None] * B)
+        return dL_dX[:, None]
