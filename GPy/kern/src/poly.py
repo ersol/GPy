@@ -75,6 +75,6 @@ class Poly(Kern):
     def gradients_X_diag(self, dL_dKdiag, X):
         dot_prod, A, B = self._ABdiag(X)
         dK_dA = self.variance * self.order * A ** (self.order-1.)
-        dL_dA = dL_dKdiag[:,None] * (dK_dA)
-        dL_dX = (dL_dA * dot_prod) + dL_dA + (dL_dKdiag[:,None] * B)
+        dL_dA = dL_dKdiag * (dK_dA)
+        dL_dX = (dL_dA * dot_prod) + dL_dA + (dL_dKdiag * B)
         return dL_dX[:, None]
