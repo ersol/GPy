@@ -35,11 +35,9 @@ def change_plotting_library(lib, **kwargs):
             from .matplot_dep.plot_definitions import MatplotlibPlots
             from .matplot_dep import visualize, mapping_plots, priors_plots, ssgplvm, svig_plots, variational_plots, img_plots
             current_lib[0] = MatplotlibPlots()
-        if lib in ['plotly', 'plotly_online']:
-            import plotly
-            from .plotly_dep.plot_definitions import PlotlyPlotsOnline
-            current_lib[0] = PlotlyPlotsOnline(**kwargs)
-        if lib == 'plotly_offline':
+        if lib == 'plotly_online':
+            raise Exception("Plotly online is deprecated, use plotly_offline instead")
+        if lib in ['plotly', 'plotly_offline']:
             import plotly
             from .plotly_dep.plot_definitions import PlotlyPlotsOffline
             current_lib[0] = PlotlyPlotsOffline(**kwargs)
@@ -86,7 +84,7 @@ def inject_plotting():
         StateSpace.plot_f = gpy_plot.gp_plots.plot_f
         StateSpace.plot_latent = gpy_plot.gp_plots.plot_f
         StateSpace.plot_noiseless = gpy_plot.gp_plots.plot_f
-        
+
         from ..core import SparseGP
         SparseGP.plot_inducing = gpy_plot.data_plots.plot_inducing
 

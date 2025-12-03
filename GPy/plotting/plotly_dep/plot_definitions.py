@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
 import numpy as np
+import os
 from GPy.plotting.abstract_plotting_library import AbstractPlottingLibrary
 from GPy.plotting import Tango
 from GPy.plotting.plotly_dep import defaults
@@ -39,20 +40,20 @@ from plotly.graph_objs import Scatter, Scatter3d,\
 from plotly.graph_objs.scatter import Line, ErrorY, ErrorX
 from plotly.graph_objs.layout import Font, Annotation
 from _plotly_utils.exceptions import PlotlyDictKeyError
+from copy import deepcopy
 
 SYMBOL_MAP = {
-    'o': 'circle-dot',
-    'v': 'triangle-down',
-    '^': 'triangle-up',
-    '<': 'triangle-left',
-    '>': 'triangle-right',
+    'o': 'circle',
     's': 'square',
     '+': 'cross',
     'x': 'x',
-    '*': 'star',
     'D': 'diamond',
     'd': 'diamond',
+    'co': 'circle-open',
+    'do' : 'diamond-open',
+    'so' : 'square-open'
 }
+
 
 class PlotlyPlotsBase(AbstractPlottingLibrary):
     def __init__(self):
@@ -61,7 +62,7 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         self.current_states = dict()
 
     def figure(self, rows=1, cols=1, specs=None, is_3d=False, **kwargs):
-        if specs is None:
+        if (specs is None) and is_3d:
             specs = [[{'type': 'scene'}]*cols]*rows
         figure = subplots.make_subplots(rows, cols, specs=specs, **kwargs)
         return figure
@@ -119,8 +120,14 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
         figure.layout['showlegend'] = legend
         return canvas
 
-    def show_canvas(self, canvas, filename=None, **kwargs):
-        return NotImplementedError
+    def show_canvas(self, canvas, filename=None, overwrite=False, **kwargs):
+        figure, _, _ = canvas
+        if filename==None:
+            figure.show()
+        elif (not os.path.exists(filename)) or (overwrite==True):
+            figure.fig.write_html(filename)
+        else:
+            raise Exception(f"path: {filename} already exists")
 
     def scatter(self, ax, X, Y, Z=None, color=Tango.colorsHex['mediumBlue'], cmap=None, label=None, marker='o', marker_kwargs=None, **kwargs):
         try:
@@ -323,26 +330,29 @@ class PlotlyPlotsBase(AbstractPlottingLibrary):
                                        legendgroup='density', hoverinfo='none', **kwargs))
         return polycol
 
-    def fill_between_surfaces(self, ax, X_mesh, Y_mesh, lower_surface, upper_surface, lower_values=None, upper_values=None, color=Tango.colorsHex['mediumBlue'], label=None, line_kwargs=None, **kwargs):
+    def fill_between_surfaces(self, ax, X, Y, lower_surface, upper_surface, lower_values=None, upper_values=None, color=Tango.colorsHex['mediumBlue'], label=None, line_kwargs=None, **kwargs):
+        fig, _, _ = ax
         if lower_values is None:
             lower_values = lower_surface#np.ones(lower_surface.shape)
         if upper_values is None:
             upper_values = upper_surface#np.ones(upper_surface.shape)
-        surface_tuples = [(lower_surface, lower_values), (upper_surface, upper_values)]
+        surface_tuples = [(lower_surface, lower_values, {"showscale" : False}), (upper_surface, upper_values, {"showscale" : True, "colorbar" : {"x" : 1, "y" : 0.5}})]
         traces = []
-        if "hovertemplate" in kwargs.keys():
-            hovertemplate = kwargs["hovertemplate"]
+        surface_kwargs = deepcopy(kwargs)
+        if "hovertemplate" in surface_kwargs.keys():
+            hovertemplate = surface_kwargs.pop("hovertemplate")
         else:
-            hovertemplate = "x: %{x:.2f}\ny: %{y:.2f}\nz: %{z:.2f}\nsigma: %{surfacecolor:.2f}"
+            hovertemplate = "x: %{x:.2f}\ny: %{y:.2f}\nz: %{z:.2f}"#\nsigma: %{surfacecolor:.2f}
         for surface_tuple in surface_tuples:
-            surface, values = surface_tuple
+            surface, values, surface_kwargs = surface_tuple
             trace = Surface(
-                x=X_mesh,
-                y=Y_mesh,
+                x=X,
+                y=Y,
                 z=surface,
                 surfacecolor=values,
                 opacity=0.5,
-                hovertemplate=hovertemplate
+                hovertemplate=hovertemplate,
+                **surface_kwargs
                 )
             traces.append(trace)
         return traces

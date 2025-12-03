@@ -268,7 +268,7 @@ def update_not_existing_kwargs(to_update, update_from):
     to_update.update({k:v for k,v in update_from.items() if k not in to_update})
     return to_update
 
-def get_x_y_var(model):
+def get_x_y_var(model, xscale=None):
     """
     Either the the data from a model as
     X the inputs,
@@ -296,8 +296,21 @@ def get_x_y_var(model):
 
     if isinstance(model, WarpedGP) and not model.predict_in_warped_space:
         Y = model.Y_normalized
-    
+
     if sparse.issparse(Y): Y = Y.todense().view(np.ndarray)
+    if xscale is not None:
+        #if hasattr(model, "X_plot_scaling") and (model.X_plot_scaling is not None):
+        if (X_variance is not None) and (model.X_plot_scaling is not None):
+            X = model.X_plot_scaling
+        elif X is not None:
+            model.X_plot_scaling = X*xscale
+            X = model.X_plot_scaling
+        #if hasattr(model, "X_variance_plot_scaling") and (model.X_variance_plot_scaling is not None):
+        if (X_variance is not None) and (model.X_variance_plot_scaling is not None):
+            X_variance = model.X_variance_plot_scaling
+        elif X_variance is not None:
+            model.X_variance_plot_scaling = X_variance*xscale
+            X_variance = model.X_variance_plot_scaling
     return X, X_variance, Y
 
 def get_free_dims(model, visible_dims, fixed_dims):

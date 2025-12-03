@@ -35,7 +35,7 @@ from .plot_util import get_x_y_var, get_free_dims, get_which_data_ycols,\
 
 def plot_data(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        projection='2d', label=None, **plot_kwargs):
+        projection='2d', label=None, xscale=None, **plot_kwargs):
     """
     Plot the training data
       - For higher dimensions than two, use fixed_inputs to plot the data points with some of the inputs fixed.
@@ -56,16 +56,16 @@ def plot_data(self, which_data_rows='all',
     :returns list: of plots created.
     """
     canvas, plot_kwargs = pl().new_canvas(projection=projection, **plot_kwargs)
-    plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **plot_kwargs)
+    plots = _plot_data(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, xscale=xscale, **plot_kwargs)
     return pl().add_to_canvas(canvas, plots)
 
 def _plot_data(self, canvas, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        projection='2d', label=None, **plot_kwargs):
+        projection='2d', label=None, xscale=None, **plot_kwargs):
     ycols = get_which_data_ycols(self, which_data_ycols)
     rows = get_which_data_rows(self, which_data_rows)
 
-    X, _, Y = get_x_y_var(self)
+    X, _, Y = get_x_y_var(self, xscale=xscale)
     free_dims = get_free_dims(self, visible_dims, None)
 
     plots = {}
@@ -96,7 +96,7 @@ def _plot_data(self, canvas, which_data_rows='all',
 
 def plot_data_error(self, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        projection='2d', label=None, **error_kwargs):
+        projection='2d', label=None, xscale=None, **error_kwargs):
     """
     Plot the training data input error.
 
@@ -119,16 +119,16 @@ def plot_data_error(self, which_data_rows='all',
     :returns list: of plots created.
     """
     canvas, error_kwargs = pl().new_canvas(projection=projection, **error_kwargs)
-    plots = _plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, **error_kwargs)
+    plots = _plot_data_error(self, canvas, which_data_rows, which_data_ycols, visible_dims, projection, label, xscale=xscale, **error_kwargs)
     return pl().add_to_canvas(canvas, plots)
 
 def _plot_data_error(self, canvas, which_data_rows='all',
         which_data_ycols='all', visible_dims=None,
-        projection='2d', label=None, **error_kwargs):
+        projection='2d', label=None, xscale=None, **error_kwargs):
     ycols = get_which_data_ycols(self, which_data_ycols)
     rows = get_which_data_rows(self, which_data_rows)
 
-    X, X_variance, Y = get_x_y_var(self)
+    X, X_variance, Y = get_x_y_var(self, xscale=xscale)
     free_dims = get_free_dims(self, visible_dims, None)
 
     plots = {}
@@ -158,7 +158,7 @@ def _plot_data_error(self, canvas, which_data_rows='all',
 
     return plots
 
-def plot_inducing(self, visible_dims=None, projection='2d', label='inducing', legend=True, **plot_kwargs):
+def plot_inducing(self, visible_dims=None, projection='2d', label='inducing', legend=True, xscale=None, **plot_kwargs):
     """
     Plot the inducing inputs of a sparse gp model
 
@@ -166,16 +166,25 @@ def plot_inducing(self, visible_dims=None, projection='2d', label='inducing', le
     :param kwargs plot_kwargs: keyword arguments for the plotting library
     """
     canvas, kwargs = pl().new_canvas(projection=projection, **plot_kwargs)
-    plots = _plot_inducing(self, canvas, visible_dims, projection, label, **kwargs)
+    plots = _plot_inducing(self, canvas, visible_dims, projection, label, xscale=xscale, **kwargs)
     return pl().add_to_canvas(canvas, plots, legend=legend)
 
-def _plot_inducing(self, canvas, visible_dims, projection, label, **plot_kwargs):
+def _plot_inducing(self, canvas, visible_dims, projection, label, xscale=None, **plot_kwargs):
     if visible_dims is None:
         sig_dims = self.get_most_significant_input_dimensions()
         visible_dims = [i for i in sig_dims if i is not None]
     free_dims = get_free_dims(self, visible_dims, None)
 
-    Z = self.Z.values
+    if xscale is not None:
+        #if hasattr(self, "Z_plot_scaling") and (self.Z_plot_scaling is not None):
+        if (self.Z.values is not None) and (self.Z_plot_scaling is not None):
+            Z = self.Z_plot_scaling
+        elif self.Z.values is not None:
+            self.Z_plot_scaling = self.Z.values*xscale
+            Z = self.Z_plot_scaling
+    else:
+        Z = self.Z.values
+
     plots = {}
 
     #one dimensional plotting
@@ -273,5 +282,3 @@ def _plot_errorbars_trainset(self, canvas,
     else:
         raise NotImplementedError("Cannot plot in more then one dimensions, or 3d")
     return dict(yerrorbars=plots)
-
-

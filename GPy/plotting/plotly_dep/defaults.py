@@ -47,7 +47,7 @@ data_1d = dict(marker_kwargs=dict(), marker='x', color='black')
 data_2d = dict(marker='o', cmap='Hot', marker_kwargs=dict(opacity=1., size=5, line=Line(width=.5, color='black')))
 inducing_1d = dict(color=Tango.colorsHex['darkRed'])
 inducing_2d = dict(marker_kwargs=dict(size='5', opacity=.7, line=Line(width=.5, color='black')), opacity=.7, color='white', marker='star-triangle-up')
-inducing_3d = dict(marker_kwargs=dict(symbol='diamond', size='5', opacity=.7, line=Line(width=.1, color='black')), color='#F5F5F5')
+inducing_3d = dict(marker_kwargs=dict(symbol='diamond', size=5, opacity=.7, line=Line(width=.1, color='black')), color='#F5F5F5')
 xerrorbar = dict(color='black', error_kwargs=dict(thickness=.5), opacity=.5)
 yerrorbar = dict(color=Tango.colorsHex['darkRed'], error_kwargs=dict(thickness=.5), opacity=.5)
 #
